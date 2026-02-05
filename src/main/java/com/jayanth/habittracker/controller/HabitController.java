@@ -3,6 +3,7 @@ package com.jayanth.habittracker.controller;
 import com.jayanth.habittracker.entity.Habit;
 import com.jayanth.habittracker.service.HabitService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -39,5 +40,25 @@ public class HabitController {
     @DeleteMapping("/{id}")
     public void deleteHabit(@PathVariable Long id) {
         habitService.deleteHabit(id);
+    }
+
+    @PutMapping("/complete/{id}")
+    public ResponseEntity<Habit> markCompleted(@PathVariable Long id) {
+
+        Optional<Habit> optionalHabit = habitService.getHabitById(id);
+
+        if(optionalHabit.isPresent()) {
+
+            Habit habit = optionalHabit.get();
+
+            habit.setCompleted(true);
+            habit.setLastCompletedDate(java.time.LocalDate.now().toString());
+
+            Habit updated = habitService.updateHabit(id, habit);
+
+            return ResponseEntity.ok(updated);
+        }
+
+        return ResponseEntity.notFound().build();
     }
 }

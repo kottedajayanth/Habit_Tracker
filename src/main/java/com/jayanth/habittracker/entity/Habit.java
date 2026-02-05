@@ -17,6 +17,12 @@ public class Habit {
     @Column(name = "user_id")
     private Long userId;
 
+    @Column(name = "completed")
+    private Boolean completed = false;
+
+    @Column(name = "last_completed_date")
+    private String lastCompletedDate;
+
     public Habit() {
     }
 
@@ -24,6 +30,7 @@ public class Habit {
         this.habitName = habitName;
         this.description = description;
         this.userId = userId;
+        this.completed = false;
     }
 
     public Long getId() {
@@ -56,5 +63,21 @@ public class Habit {
 
     public void setUserId(Long userId) {
         this.userId = userId;
+    }
+
+    public Boolean getCompleted() {
+        return completed;
+    }
+
+    public void setCompleted(Boolean completed) {
+        this.completed = completed;
+    }
+
+    public String getLastCompletedDate() {
+        return lastCompletedDate;
+    }
+
+    public void setLastCompletedDate(String lastCompletedDate) {
+        this.lastCompletedDate = lastCompletedDate;
     }
 }
