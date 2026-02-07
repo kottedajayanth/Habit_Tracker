@@ -41,6 +41,23 @@ public class HabitController {
     public void deleteHabit(@PathVariable Long id) {
         habitService.deleteHabit(id);
     }
+    @PutMapping("/undo/{id}")
+    public Habit undoCompleted(@PathVariable Long id) {
+
+    Optional<Habit> optionalHabit = habitService.getHabitById(id);
+
+    if(optionalHabit.isPresent()) {
+
+        Habit habit = optionalHabit.get();
+
+        habit.setCompleted(false);
+        habit.setLastCompletedDate("");
+
+        return habitService.updateHabit(id, habit);
+        }
+
+        return null;
+    }
 
     @PutMapping("/complete/{id}")
     public ResponseEntity<Habit> markCompleted(@PathVariable Long id) {
