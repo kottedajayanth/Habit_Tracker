@@ -1,81 +1,81 @@
 package com.jayanth.habittracker.controller;
 
 import com.jayanth.habittracker.entity.Habit;
-import com.jayanth.habittracker.service.HabitService;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
+import com.jayanth.habittracker.entity.User;
+import com.jayanth.habittracker.repository.HabitRepository;
+import com.jayanth.habittracker.repository.UserRepository;
+import com.jayanth.habittracker.security.SecurityUtil;
+
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Optional;
 
-@CrossOrigin(origins = "http://localhost:3000")
 @RestController
 @RequestMapping("/api/habits")
+@CrossOrigin(origins = "http://localhost:3000")
 public class HabitController {
 
-    @Autowired
-    private HabitService habitService;
+    private final HabitRepository habitRepository;
+    private final UserRepository userRepository;
 
-    @PostMapping
-    public Habit addHabit(@RequestBody Habit habit) {
-        return habitService.addHabit(habit);
+    public HabitController(HabitRepository habitRepository,
+                            UserRepository userRepository) {
+        this.habitRepository = habitRepository;
+        this.userRepository = userRepository;
     }
 
+    // ✅ GET habits
     @GetMapping
-    public List<Habit> getAllHabits() {
-        return habitService.getAllHabits();
+    public List<Habit> getHabits() {
+
+        String email = SecurityUtil.getCurrentUserEmail();
+        if (email == null) {
+            throw new RuntimeException("Unauthorized");
+        }
+
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        return habitRepository.findByUser(user);
     }
 
-    @GetMapping("/{id}")
-    public Optional<Habit> getHabitById(@PathVariable Long id) {
-        return habitService.getHabitById(id);
+    // ✅ CREATE habit
+    @PostMapping
+    public Habit createHabit(@RequestBody Habit habit) {
+
+        String email = SecurityUtil.getCurrentUserEmail();
+        if (email == null) {
+            throw new RuntimeException("Unauthorized");
+        }
+
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        habit.setId(null);      // important
+        habit.setUser(user);
+
+        return habitRepository.save(habit);
     }
 
-    @PutMapping("/{id}")
-    public Habit updateHabit(@PathVariable Long id, @RequestBody Habit habit) {
-        return habitService.updateHabit(id, habit);
-    }
-
+    // ✅ DELETE habit
     @DeleteMapping("/{id}")
     public void deleteHabit(@PathVariable Long id) {
-        habitService.deleteHabit(id);
-    }
-    @PutMapping("/undo/{id}")
-    public Habit undoCompleted(@PathVariable Long id) {
 
-    Optional<Habit> optionalHabit = habitService.getHabitById(id);
-
-    if(optionalHabit.isPresent()) {
-
-        Habit habit = optionalHabit.get();
-
-        habit.setCompleted(false);
-        habit.setLastCompletedDate("");
-
-        return habitService.updateHabit(id, habit);
+        String email = SecurityUtil.getCurrentUserEmail();
+        if (email == null) {
+            throw new RuntimeException("Unauthorized");
         }
 
-        return null;
-    }
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
 
-    @PutMapping("/complete/{id}")
-    public ResponseEntity<Habit> markCompleted(@PathVariable Long id) {
+        Habit habit = habitRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Habit not found"));
 
-        Optional<Habit> optionalHabit = habitService.getHabitById(id);
-
-        if(optionalHabit.isPresent()) {
-
-            Habit habit = optionalHabit.get();
-
-            habit.setCompleted(true);
-            habit.setLastCompletedDate(java.time.LocalDate.now().toString());
-
-            Habit updated = habitService.updateHabit(id, habit);
-
-            return ResponseEntity.ok(updated);
+        if (!habit.getUser().getId().equals(user.getId())) {
+            throw new RuntimeException("Unauthorized");
         }
 
-        return ResponseEntity.notFound().build();
+        habitRepository.delete(habit);
     }
 }
